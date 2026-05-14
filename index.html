@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简历优化助手 - AI智能优化</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">📄 简历优化助手</a>
+            <div class="nav-links">
+                <a href="#upload">上传优化</a>
+                <a href="#text">文本优化</a>
+                <a href="#examples">示例</a>
+                <a href="#about">关于</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <section class="hero">
+        <div class="container">
+            <h1>AI简历优化，让机会主动找你</h1>
+            <p>上传你的简历PDF，AI智能分析并优化内容，提升通过率</p>
+            <div class="cta-buttons">
+                <a href="#upload" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> 上传简历PDF
+                </a>
+                <a href="#text" class="btn btn-secondary">
+                    <i class="fas fa-edit"></i> 文本优化
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 上传优化区域 -->
+    <section id="upload" class="section">
+        <div class="container">
+            <h2><i class="fas fa-file-pdf"></i> 上传简历PDF优化</h2>
+            <p class="section-desc">支持PDF格式，AI自动解析并优化内容</p>
+            
+            <div class="upload-area" id="dropArea">
+                <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                <h3>拖放PDF文件到这里</h3>
+                <p>或点击选择文件</p>
+                <input type="file" id="pdfUpload" accept=".pdf" hidden>
+                <button class="btn btn-upload" onclick="document.getElementById('pdfUpload').click()">
+                    <i class="fas fa-folder-open"></i> 选择PDF文件
+                </button>
+                <p class="file-info" id="fileInfo">未选择文件</p>
+            </div>
+            
+            <div class="api-key-area">
+                <h4><i class="fas fa-key"></i> AI API配置</h4>
+                <div class="input-group">
+                    <input type="text" id="apiKey" placeholder="输入你的AI API Key（可选）">
+                    <select id="aiModel">
+                        <option value="deepseek-v3-2-251201">DeepSeek V3</option>
+                        <option value="gpt-4">GPT-4</option>
+                        <option value="claude-3">Claude 3</option>
+                    </select>
+                </div>
+                <p class="note">不提供API Key将使用演示模式（有限功能）</p>
+            </div>
+            
+            <div class="optimize-options">
+                <h4><i class="fas fa-sliders-h"></i> 优化选项</h4>
+                <div class="options-grid">
+                    <label><input type="checkbox" checked> 语法纠错</label>
+                    <label><input type="checkbox" checked> 表达优化</label>
+                    <label><input type="checkbox" checked> 关键词优化</label>
+                    <label><input type="checkbox"> ATS系统适配</label>
+                    <label><input type="checkbox"> 行业术语优化</label>
+                    <label><input type="checkbox"> 量化成果</label>
+                </div>
+            </div>
+            
+            <button class="btn btn-optimize" id="optimizeBtn" onclick="optimizeResume()">
+                <i class="fas fa-magic"></i> 开始优化简历
+            </button>
+            
+            <div class="progress-area" id="progressArea" style="display:none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">正在解析PDF...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 文本优化区域 -->
+    <section id="text" class="section bg-light">
+        <div class="container">
+            <h2><i class="fas fa-edit"></i> 文本直接优化</h2>
+            <p class="section-desc">直接输入简历文本，AI实时优化</p>
+            
+            <div class="text-editor">
+                <div class="editor-container">
+                    <div class="editor-header">
+                        <span>原始文本</span>
+                        <button class="btn-small" onclick="clearText()">
+                            <i class="fas fa-trash"></i> 清空
+                        </button>
+                    </div>
+                    <textarea id="originalText" placeholder="粘贴你的简历文本到这里...&#10;例如：&#10;负责项目管理和团队协作&#10;熟练掌握Python和JavaScript&#10;有3年软件开发经验"></textarea>
+                    <div class="editor-footer">
+                        <span id="charCount">0 字符</span>
+                        <button class="btn-small" onclick="pasteExample()">
+                            <i class="fas fa-clipboard"></i> 示例
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="editor-actions">
+                    <button class="btn-action" onclick="optimizeText()">
+                        <i class="fas fa-arrow-right"></i> 优化
+                    </button>
+                </div>
+                
+                <div class="editor-container">
+                    <div class="editor-header">
+                        <span>优化结果</span>
+                        <button class="btn-small" onclick="copyResult()">
+                            <i class="fas fa-copy"></i> 复制
+                        </button>
+                    </div>
+                    <div id="optimizedText" class="result-area">
+                        <p class="placeholder">优化结果将显示在这里...</p>
+                    </div>
+                    <div class="editor-footer">
+                        <button class="btn-small" onclick="downloadText()">
+                            <i class="fas fa-download"></i> 下载TXT
+                        </button>
+                        <button class="btn-small" onclick="saveAsPDF()">
+                            <i class="fas fa-file-pdf"></i> 保存PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 示例区域 -->
+    <section id="examples" class="section">
+        <div class="container">
+            <h2><i class="fas fa-star"></i> 优化示例</h2>
+            <div class="examples-grid">
+                <div class="example-card">
+                    <h4>优化前</h4>
+                    <p>"负责管理团队和做项目"</p>
+                    <div class="arrow"><i class="fas fa-arrow-down"></i></div>
+                    <h4>优化后</h4>
+                    <p>"领导5人跨职能团队，成功交付3个大型项目，按时完成率100%"</p>
+                </div>
+                <div class="example-card">
+                    <h4>优化前</h4>
+                    <p>"会写代码"</p>
+                    <div class="arrow"><i class="fas fa-arrow-down"></i></div>
+                    <h4>优化后</h4>
+                    <p>"熟练掌握Python、JavaScript全栈开发，独立完成3个高并发Web应用"</p>
+                </div>
+                <div class="example-card">
+                    <h4>优化前</h4>
+                    <p>"做销售工作"</p>
+                    <div class="arrow"><i class="fas fa-arrow-down"></i></div>
+                    <h4>优化后</h4>
+                    <p>"负责华东区销售业务，年度销售额增长35%，客户满意度达95%"</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 关于区域 -->
+    <section id="about" class="section bg-light">
+        <div class="container">
+            <h2><i class="fas fa-info-circle"></i> 关于本站</h2>
+            <div class="about-content">
+                <div class="about-card">
+                    <i class="fas fa-shield-alt fa-2x"></i>
+                    <h4>隐私保护</h4>
+                    <p>所有处理在浏览器本地完成，不上传服务器，保护你的隐私</p>
+                </div>
+                <div class="about-card">
+                    <i class="fas fa-bolt fa-2x"></i>
+                    <h4>快速高效</h4>
+                    <p>AI实时优化，秒级响应，无需等待</p>
+                </div>
+                <div class="about-card">
+                    <i class="fas fa-laptop-code fa-2x"></i>
+                    <h4>纯前端</h4>
+                    <p>无需后端，部署在GitHub Pages，永久免费</p>
+                </div>
+                <div class="about-card">
+                    <i class="fas fa-file-pdf fa-2x"></i>
+                    <h4>PDF支持</h4>
+                    <p>支持PDF解析，保留格式，优化后可直接使用</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer>
+        <div class="container">
+            <p>© 2026 简历优化助手 · 部署在 <a href="https://abell123456.github.io/resume" target="_blank">GitHub Pages</a></p>
+            <p class="footer-links">
+                <a href="#"><i class="fab fa-github"></i> GitHub</a>
+                <a href="#"><i class="fas fa-question-circle"></i> 帮助</a>
+                <a href="#"><i class="fas fa-envelope"></i> 联系</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
