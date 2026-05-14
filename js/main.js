@@ -220,9 +220,9 @@ async function callAIOptimization(text, apiKey, model) {
     return callVolcEngineDirectly(text, apiKey, model);
 }
 
-// 直接调用火山引擎API
+// 直接调用火山引擎API（已配置CORS支持）
 async function callVolcEngineDirectly(text, apiKey, model) {
-    // 火山引擎Serverless服务API地址
+    // 火山引擎Serverless服务API地址（已配置CORS）
     const volcEngineEndpoint = 'https://sd82kp23s1b9g1a99bjug.apigateway-cn-beijing.volceapi.com/v1/chat';
     
     const prompt = `请优化以下简历文本，使其更专业、更有吸引力：
@@ -241,20 +241,24 @@ ${text}
 请直接返回优化后的完整简历文本，包括联系方式、教育背景、工作经历、技能等所有部分：`;
 
     try {
+        // 正确配置CORS请求
         const response = await fetch(volcEngineEndpoint, {
             method: 'POST',
+            mode: 'cors', // 明确指定cors模式
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 prompt: prompt
-            })
+            }),
+            credentials: 'omit' // 不发送凭据，避免CORS预检复杂化
         });
         
         if (!response.ok) {
             const errorText = await response.text();
             console.error('火山引擎API错误响应:', errorText);
-            throw new Error(`火山引擎API调用失败: ${response.status} ${response.statusText}`);
+            throw new Error(`API调用失败: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();

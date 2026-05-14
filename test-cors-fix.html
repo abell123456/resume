@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS修复测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        textarea { width: 100%; height: 100px; margin: 10px 0; }
+        button { padding: 10px 20px; background: #4361ee; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>CORS修复测试</h1>
+    
+    <h3>测试1: 简单测试请求</h3>
+    <button onclick="testSimple()">测试简单请求</button>
+    
+    <h3>测试2: 简历优化请求</h3>
+    <textarea id="resumeText">张三\n前端开发工程师\n3年经验</textarea>
+    <button onclick="testResume()">测试简历优化</button>
+    
+    <h3>测试3: 不同配置的请求</h3>
+    <button onclick="testWithCors()">测试带CORS配置</button>
+    <button onclick="testNoCors()">测试no-cors模式</button>
+    
+    <div id="result" style="margin-top: 20px;">
+        <h3>结果:</h3>
+        <pre id="output">等待测试...</pre>
+    </div>
+    
+    <script>
+        const API_URL = 'https://sd82kp23s1b9g1a99bjug.apigateway-cn-beijing.volceapi.com/v1/chat';
+        
+        function log(message) {
+            document.getElementById('output').textContent = message;
+            console.log(message);
+        }
+        
+        async function testSimple() {
+            log('测试简单请求...');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Hello'
+                    })
+                });
+                
+                log(`状态码: ${response.status}\n响应头: ${JSON.stringify([...response.headers.entries()])}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`成功: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    const text = await response.text();
+                    log(`错误: ${text}`);
+                }
+            } catch (error) {
+                log(`异常: ${error.message}\n${error.stack}`);
+            }
+        }
+        
+        async function testResume() {
+            log('测试简历优化请求...');
+            const text = document.getElementById('resumeText').value;
+            const prompt = `请优化以下简历文本：\n\n${text}\n\n要求：专业简洁`;
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'omit',
+                    body: JSON.stringify({
+                        prompt: prompt
+                    })
+                });
+                
+                log(`状态码: ${response.status}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`成功: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    const text = await response.text();
+                    log(`错误: ${text}`);
+                }
+            } catch (error) {
+                log(`异常: ${error.message}`);
+            }
+        }
+        
+        async function testWithCors() {
+            log('测试带完整CORS配置...');
+            try {
+                // 先测试OPTIONS预检请求
+                const optionsResponse = await fetch(API_URL, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'content-type',
+                        'Origin': window.location.origin
+                    }
+                });
+                
+                log(`OPTIONS响应: ${optionsResponse.status}\nHeaders: ${JSON.stringify([...optionsResponse.headers.entries()])}`);
+                
+                // 然后测试POST请求
+                const postResponse = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        prompt: '测试CORS配置'
+                    })
+                });
+                
+                log(`POST响应: ${postResponse.status}`);
+                
+                if (postResponse.ok) {
+                    const data = await postResponse.json();
+                    log(`数据: ${JSON.stringify(data, null, 2)}`);
+                }
+            } catch (error) {
+                log(`异常: ${error.message}`);
+            }
+        }
+        
+        async function testNoCors() {
+            log('测试no-cors模式...');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: '测试no-cors'
+                    })
+                });
+                
+                log(`no-cors响应: 类型=${response.type}, URL=${response.url}, 状态=${response.status}`);
+                
+                // no-cors模式下无法读取响应体
+                log('注意: no-cors模式下无法读取响应内容，只能知道请求是否发送成功');
+            } catch (error) {
+                log(`异常: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
