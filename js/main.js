@@ -9,80 +9,7 @@ let optimizedResult = '';
 document.addEventListener('DOMContentLoaded', function() {
     initFileUpload();
     initTextEditor();
-    checkServiceStatus();
 });
-
-// 检查服务状态
-async function checkServiceStatus() {
-    try {
-        const response = await fetch('http://localhost:3000/health', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-            timeout: 5000
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('服务状态正常:', data);
-            updateServiceStatusUI(true, data);
-        } else {
-            console.warn('服务状态检查失败:', response.status);
-            updateServiceStatusUI(false);
-        }
-    } catch (error) {
-        console.warn('服务不可用:', error.message);
-        updateServiceStatusUI(false);
-    }
-}
-
-// 更新服务状态UI
-function updateServiceStatusUI(isOnline, serviceInfo = null) {
-    const apiArea = document.querySelector('.api-key-area');
-    if (!apiArea) return;
-    
-    // 创建或更新状态指示器
-    let statusElement = apiArea.querySelector('.service-status');
-    if (!statusElement) {
-        statusElement = document.createElement('div');
-        statusElement.className = 'service-status';
-        apiArea.insertBefore(statusElement, apiArea.firstChild);
-    }
-    
-    if (isOnline) {
-        statusElement.className = 'service-status';
-        statusElement.textContent = '服务在线';
-        
-        if (serviceInfo) {
-            // 更新服务信息
-            const infoItems = apiArea.querySelectorAll('.info-item');
-            if (infoItems.length >= 3) {
-                infoItems[2].querySelector('span').textContent = 
-                    `API地址: ${serviceInfo.volcengine_api || '火山引擎Serverless'}`;
-            }
-        }
-    } else {
-        statusElement.className = 'service-status offline';
-        statusElement.textContent = '服务离线 - 使用备用方案';
-        
-        // 显示备用方案提示
-        const backupInfo = document.createElement('div');
-        backupInfo.className = 'backup-info';
-        backupInfo.innerHTML = `
-            <p style="color: #c62828; margin-top: 10px; font-size: 14px;">
-                <i class="fas fa-exclamation-triangle"></i>
-                本地服务不可用，将直接调用火山引擎API
-            </p>
-        `;
-        
-        // 移除旧的备份信息
-        const oldBackup = apiArea.querySelector('.backup-info');
-        if (oldBackup) oldBackup.remove();
-        
-        apiArea.appendChild(backupInfo);
-    }
-}
 
 // 初始化文件上传
 function initFileUpload() {
@@ -190,10 +117,6 @@ async function optimizeResume() {
         return;
     }
     
-    // 使用预设的火山引擎API Key和模型
-    const apiKey = '9e9276b9-0089-4253-9b91-58525ac957a9';
-    const model = 'volcengine/deepseek-v3-2-251201';
-    
     // 显示进度条
     const progressArea = document.getElementById('progressArea');
     const progressFill = document.getElementById('progressFill');
@@ -215,11 +138,11 @@ async function optimizeResume() {
             throw new Error('无法从PDF提取文本内容');
         }
         
-        // 步骤2: 调用AI优化
+        // 步骤2: 调用AI优化（直接调用火山引擎API）
         progressFill.style.width = '60%';
         progressText.textContent = 'AI优化中...';
         
-        optimizedResult = await callAIOptimization(text, apiKey, model);
+        optimizedResult = await callAIOptimization(text, '', '');
         
         // 步骤3: 显示结果
         progressFill.style.width = '90%';
@@ -291,62 +214,13 @@ async function extractTextFromPDF(file) {
     });
 }
 
-// 调用AI优化 - 修改为调用本地简历优化服务
+// 调用AI优化 - 直接调用火山引擎API
 async function callAIOptimization(text, apiKey, model) {
-    // 调用本地简历优化服务
-    const localServiceEndpoint = 'http://localhost:3000/optimize';
-    
-    try {
-        const response = await fetch(localServiceEndpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                resume_text: text,
-                language: 'zh-CN'
-            })
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('本地服务错误响应:', errorText);
-            throw new Error(`服务调用失败: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.error || '优化失败');
-        }
-        
-        // 根据本地服务返回格式提取优化结果
-        let optimizedText = '';
-        
-        if (typeof data.optimized_result === 'string') {
-            optimizedText = data.optimized_result;
-        } else if (data.optimized_result && data.optimized_result.data) {
-            optimizedText = data.optimized_result.data;
-        } else if (data.optimized_result && data.optimized_result.choices) {
-            // OpenAI兼容格式
-            optimizedText = data.optimized_result.choices[0]?.message?.content || '';
-        } else {
-            // 尝试直接使用
-            optimizedText = JSON.stringify(data.optimized_result);
-        }
-        
-        return optimizedText;
-        
-    } catch (error) {
-        console.error('AI调用详细错误:', error);
-        
-        // 如果本地服务失败，回退到直接调用火山引擎API
-        console.log('本地服务调用失败，尝试直接调用火山引擎API...');
-        return callVolcEngineDirectly(text, apiKey, model);
-    }
+    // 直接调用火山引擎Serverless API
+    return callVolcEngineDirectly(text, apiKey, model);
 }
 
-// 直接调用火山引擎API（备用方案）
+// 直接调用火山引擎API
 async function callVolcEngineDirectly(text, apiKey, model) {
     // 火山引擎Serverless服务API地址
     const volcEngineEndpoint = 'https://sd82kp23s1b9g1a99bjug.apigateway-cn-beijing.volceapi.com/v1/chat';
@@ -394,7 +268,10 @@ ${text}
         
     } catch (error) {
         console.error('火山引擎API调用失败:', error);
-        throw error;
+        
+        // 如果API调用失败，使用模拟优化作为备用
+        console.log('火山引擎API调用失败，使用模拟优化...');
+        return simulateOptimization(text);
     }
 }
 

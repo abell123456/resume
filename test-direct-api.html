@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>直接API调用测试</title>
+</head>
+<body>
+    <h1>火山引擎API直接调用测试</h1>
+    
+    <div>
+        <h3>测试简历文本：</h3>
+        <textarea id="testText" rows="5" cols="50">张三
+前端开发工程师
+3年React开发经验
+擅长：JavaScript, TypeScript, React</textarea>
+        <br>
+        <button onclick="testAPI()">测试API调用</button>
+    </div>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; min-height: 100px;">
+        结果将显示在这里...
+    </div>
+    
+    <script>
+        async function testAPI() {
+            const text = document.getElementById('testText').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '正在调用火山引擎API...';
+            
+            try {
+                // 直接调用火山引擎API
+                const response = await fetch('https://sd82kp23s1b9g1a99bjug.apigateway-cn-beijing.volceapi.com/v1/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: `请优化以下简历文本：\n\n${text}\n\n要求：专业简洁，突出技能`
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API调用失败: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.code === 200 && data.data) {
+                    resultDiv.innerHTML = `<h3>优化成功：</h3><pre>${data.data}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<h3>API返回错误：</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>错误：</h3><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

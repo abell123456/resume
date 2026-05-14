@@ -1,0 +1,15 @@
+部署时间: Thu May 14 14:12:21 CST 2026
+提交哈希: 8544cfbd66d006860bde4bc9e6f9401f7dfa056c
+修改文件:
+    - 前端改为调用本地简历优化服务
+    - 服务地址：http://localhost:3000/optimize
+    - 后端使用火山引擎Serverless API
+    - 添加服务状态实时检测
+    - 智能错误降级机制
+    - 更新UI和用户说明
+    
+    部署时间: 2026-05-14 14:08:24
+    版本: 2.0.0
+
+deploy-with-token.sh
+服务状态: "status":"healthy"
