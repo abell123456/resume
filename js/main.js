@@ -9,7 +9,80 @@ let optimizedResult = '';
 document.addEventListener('DOMContentLoaded', function() {
     initFileUpload();
     initTextEditor();
+    checkServiceStatus();
 });
+
+// 检查服务状态
+async function checkServiceStatus() {
+    try {
+        const response = await fetch('http://localhost:3000/health', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            },
+            timeout: 5000
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('服务状态正常:', data);
+            updateServiceStatusUI(true, data);
+        } else {
+            console.warn('服务状态检查失败:', response.status);
+            updateServiceStatusUI(false);
+        }
+    } catch (error) {
+        console.warn('服务不可用:', error.message);
+        updateServiceStatusUI(false);
+    }
+}
+
+// 更新服务状态UI
+function updateServiceStatusUI(isOnline, serviceInfo = null) {
+    const apiArea = document.querySelector('.api-key-area');
+    if (!apiArea) return;
+    
+    // 创建或更新状态指示器
+    let statusElement = apiArea.querySelector('.service-status');
+    if (!statusElement) {
+        statusElement = document.createElement('div');
+        statusElement.className = 'service-status';
+        apiArea.insertBefore(statusElement, apiArea.firstChild);
+    }
+    
+    if (isOnline) {
+        statusElement.className = 'service-status';
+        statusElement.textContent = '服务在线';
+        
+        if (serviceInfo) {
+            // 更新服务信息
+            const infoItems = apiArea.querySelectorAll('.info-item');
+            if (infoItems.length >= 3) {
+                infoItems[2].querySelector('span').textContent = 
+                    `API地址: ${serviceInfo.volcengine_api || '火山引擎Serverless'}`;
+            }
+        }
+    } else {
+        statusElement.className = 'service-status offline';
+        statusElement.textContent = '服务离线 - 使用备用方案';
+        
+        // 显示备用方案提示
+        const backupInfo = document.createElement('div');
+        backupInfo.className = 'backup-info';
+        backupInfo.innerHTML = `
+            <p style="color: #c62828; margin-top: 10px; font-size: 14px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                本地服务不可用，将直接调用火山引擎API
+            </p>
+        `;
+        
+        // 移除旧的备份信息
+        const oldBackup = apiArea.querySelector('.backup-info');
+        if (oldBackup) oldBackup.remove();
+        
+        apiArea.appendChild(backupInfo);
+    }
+}
 
 // 初始化文件上传
 function initFileUpload() {
@@ -117,8 +190,9 @@ async function optimizeResume() {
         return;
     }
     
-    const apiKey = document.getElementById('apiKey').value.trim();
-    const model = document.getElementById('aiModel').value;
+    // 使用预设的火山引擎API Key和模型
+    const apiKey = '9e9276b9-0089-4253-9b91-58525ac957a9';
+    const model = 'volcengine/deepseek-v3-2-251201';
     
     // 显示进度条
     const progressArea = document.getElementById('progressArea');
@@ -145,13 +219,7 @@ async function optimizeResume() {
         progressFill.style.width = '60%';
         progressText.textContent = 'AI优化中...';
         
-        if (apiKey) {
-            // 使用用户提供的API Key
-            optimizedResult = await callAIOptimization(text, apiKey, model);
-        } else {
-            // 演示模式：使用模拟优化
-            optimizedResult = simulateOptimization(text);
-        }
+        optimizedResult = await callAIOptimization(text, apiKey, model);
         
         // 步骤3: 显示结果
         progressFill.style.width = '90%';
@@ -180,14 +248,11 @@ async function optimizeResume() {
         progressText.textContent = `错误: ${error.message}`;
         progressFill.style.backgroundColor = '#dc3545';
         
-        // 演示模式：使用模拟数据
-        if (!apiKey) {
-            setTimeout(() => {
-                progressArea.style.display = 'none';
-                alert('演示模式：使用模拟优化结果');
-                showDemoResult();
-            }, 1500);
-        }
+        // AI调用失败时显示错误
+        setTimeout(() => {
+            progressArea.style.display = 'none';
+            alert('AI优化失败，请检查网络或稍后重试');
+        }, 1500);
     }
 }
 
@@ -226,11 +291,65 @@ async function extractTextFromPDF(file) {
     });
 }
 
-// 调用AI优化
+// 调用AI优化 - 修改为调用本地简历优化服务
 async function callAIOptimization(text, apiKey, model) {
-    // 这里需要根据实际的AI API进行调整
-    // 示例：调用DeepSeek API
-    const apiEndpoint = 'https://api.deepseek.com/v1/chat/completions';
+    // 调用本地简历优化服务
+    const localServiceEndpoint = 'http://localhost:3000/optimize';
+    
+    try {
+        const response = await fetch(localServiceEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                resume_text: text,
+                language: 'zh-CN'
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('本地服务错误响应:', errorText);
+            throw new Error(`服务调用失败: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || '优化失败');
+        }
+        
+        // 根据本地服务返回格式提取优化结果
+        let optimizedText = '';
+        
+        if (typeof data.optimized_result === 'string') {
+            optimizedText = data.optimized_result;
+        } else if (data.optimized_result && data.optimized_result.data) {
+            optimizedText = data.optimized_result.data;
+        } else if (data.optimized_result && data.optimized_result.choices) {
+            // OpenAI兼容格式
+            optimizedText = data.optimized_result.choices[0]?.message?.content || '';
+        } else {
+            // 尝试直接使用
+            optimizedText = JSON.stringify(data.optimized_result);
+        }
+        
+        return optimizedText;
+        
+    } catch (error) {
+        console.error('AI调用详细错误:', error);
+        
+        // 如果本地服务失败，回退到直接调用火山引擎API
+        console.log('本地服务调用失败，尝试直接调用火山引擎API...');
+        return callVolcEngineDirectly(text, apiKey, model);
+    }
+}
+
+// 直接调用火山引擎API（备用方案）
+async function callVolcEngineDirectly(text, apiKey, model) {
+    // 火山引擎Serverless服务API地址
+    const volcEngineEndpoint = 'https://sd82kp23s1b9g1a99bjug.apigateway-cn-beijing.volceapi.com/v1/chat';
     
     const prompt = `请优化以下简历文本，使其更专业、更有吸引力：
     
@@ -238,39 +357,45 @@ async function callAIOptimization(text, apiKey, model) {
 ${text}
 
 优化要求：
-1. 纠正语法错误
-2. 优化表达方式，使用更专业的词汇
-3. 突出成就和量化结果
-4. 适应ATS系统关键词
-5. 保持原始信息不变，只是优化表达
+1. 纠正语法错误，优化表达方式
+2. 使用更专业的词汇和行业术语
+3. 突出成就，添加量化结果（如：提升30%、增长50%等）
+4. 优化结构，使其更符合HR阅读习惯
+5. 添加合适的技能关键词，适应ATS系统
+6. 保持原始信息不变，只是优化表达
 
-请直接返回优化后的简历文本：`;
+请直接返回优化后的完整简历文本，包括联系方式、教育背景、工作经历、技能等所有部分：`;
 
-    const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: model,
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ],
-            max_tokens: 2000,
-            temperature: 0.7
-        })
-    });
-    
-    if (!response.ok) {
-        throw new Error(`API调用失败: ${response.status}`);
+    try {
+        const response = await fetch(volcEngineEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                prompt: prompt
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('火山引擎API错误响应:', errorText);
+            throw new Error(`火山引擎API调用失败: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // 火山引擎API返回格式
+        if (data.code === 200 && data.data) {
+            return data.data;
+        } else {
+            throw new Error(data.msg || '火山引擎API返回错误');
+        }
+        
+    } catch (error) {
+        console.error('火山引擎API调用失败:', error);
+        throw error;
     }
-    
-    const data = await response.json();
-    return data.choices[0].message.content;
 }
 
 // 模拟优化（演示用）
@@ -387,23 +512,19 @@ async function optimizeText() {
         return;
     }
     
-    const apiKey = document.getElementById('apiKey').value.trim();
-    const model = document.getElementById('aiModel').value;
+    // 使用预设的火山引擎API Key和模型
+    const apiKey = '9e9276b9-0089-4253-9b91-58525ac957a9';
+    const model = 'volcengine/deepseek-v3-2-251201';
     
     try {
-        if (apiKey) {
-            optimizedResult = await callAIOptimization(originalText, apiKey, model);
-        } else {
-            optimizedResult = simulateOptimization(originalText);
-            alert('演示模式：使用模拟优化');
-        }
+        optimizedResult = await callAIOptimization(originalText, apiKey, model);
         
         const resultArea = document.getElementById('optimizedText');
         resultArea.innerHTML = `<div class="optimized-content">${formatOptimizedText(optimizedResult)}</div>`;
         
     } catch (error) {
         console.error('文本优化失败:', error);
-        alert('优化失败: ' + error.message);
+        alert('AI优化失败，使用模拟优化');
         
         // 回退到模拟优化
         optimizedResult = simulateOptimization(originalText);

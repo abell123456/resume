@@ -55,16 +55,31 @@
             </div>
             
             <div class="api-key-area">
-                <h4><i class="fas fa-key"></i> AI API配置</h4>
-                <div class="input-group">
-                    <input type="text" id="apiKey" placeholder="输入你的AI API Key（可选）">
-                    <select id="aiModel">
-                        <option value="deepseek-v3-2-251201">DeepSeek V3</option>
-                        <option value="gpt-4">GPT-4</option>
-                        <option value="claude-3">Claude 3</option>
-                    </select>
+                <h4><i class="fas fa-server"></i> 服务配置</h4>
+                <p class="note">简历优化已升级为服务架构，无需配置API Key</p>
+                <div class="service-info">
+                    <div class="info-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>服务类型：本地简历优化服务</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>后端服务：火山引擎Serverless</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>API地址：http://localhost:3000/optimize</span>
+                    </div>
                 </div>
-                <p class="note">不提供API Key将使用演示模式（有限功能）</p>
+                <div class="api-help">
+                    <p><i class="fas fa-info-circle"></i> 服务架构说明</p>
+                    <ol>
+                        <li>前端 → 本地简历优化服务（localhost:3000）</li>
+                        <li>本地服务 → 火山引擎Serverless API</li>
+                        <li>无需API Key，统一服务调用</li>
+                        <li>支持批量处理和错误重试</li>
+                    </ol>
+                </div>
             </div>
             
             <div class="optimize-options">
